@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Quiz Portal</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0; padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .options label {
+      display: block;
+      background: #eee;
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .result, .feedback, .timer, .progress {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="auth">
+      <h1>Smart Quiz App</h1>
+      <input type="text" id="regName" placeholder="Enter Name" />
+      <input type="email" id="regEmail" placeholder="Enter Email" />
+      <input type="password" id="regPass" placeholder="Enter Password" />
+      <button onclick="register()">Register</button>
+      <hr />
+      <input type="email" id="loginEmail" placeholder="Login Email" />
+      <input type="password" id="loginPass" placeholder="Password" />
+      <button onclick="login()">Login</button>
+    </div>
+
+    <div id="subjectSelect" class="hidden">
+      <h2>Select Quiz Subject & Length</h2>
+      <select id="subject">
+        <option value="html">HTML</option>
+        <option value="js">JavaScript</option>
+        <option value="css">CSS</option>
+      </select>
+      <select id="quizLength">
+        <option value="1">1 Question (Test)</option>
+        <option value="5">5 Questions</option>
+        <option value="10">10 Questions</option>
+      </select>
+      <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="quizBox" class="hidden">
+      <div class="progress" id="progress"></div>
+      <div class="timer">Time Left: <span id="time">60</span> sec</div>
+      <div id="question" class="question"></div>
+      <div id="options" class="options"></div>
+      <button onclick="submitAnswer()">Next</button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <div id="resultBox" class="hidden">
+      <h2>Result</h2>
+      <div id="result"></div>
+      <div class="row">
+        <button onclick="goBack()">⬅ Back to Quiz</button>
+        <button onclick="replay()">🔄 Replay</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const questions = {
+      html: [
+        {question:"What does HTML stand for?", options:["HyperText Markup Language","HighText Machine Language","HyperTool Multi Language","None of the above"], answer:"HyperText Markup Language", explanation:"HTML stands for HyperText Markup Language."},
+        {question:"Who is the father of HTML?", options:["Rasmus Lerdorf","Tim Berners-Lee","Brendan Eich","Sergey Brin"], answer:"Tim Berners-Lee", explanation:"He is credited with inventing HTML."},
+        {question:"Which tag is used for paragraph?", options:["<p>","<div>","<para>","<paragraph>"], answer:"<p>", explanation:"<p> defines a paragraph in HTML."},
+        {question:"Which HTML tag is used to display images?", options:["<image>","<img>","<src>","<pic>"], answer:"<img>", explanation:"<img> is used for images."},
+        {question:"What attribute specifies an image path?", options:["href","src","link","path"], answer:"src", explanation:"src is used to define the source of image."},
+        {question:"Which tag creates a hyperlink?", options:["<a>","<link>","<href>","<hyper>"], answer:"<a>", explanation:"<a> tag is used for links."},
+        {question:"Which tag is used for line break?", options:["<break>","<lb>","<br>","<newline>"], answer:"<br>", explanation:"<br> inserts a line break."},
+        {question:"HTML is a _____ language.", options:["programming","markup","scripting","none"], answer:"markup", explanation:"HTML is a markup language."},
+        {question:"Which tag defines HTML document body?", options:["<html>","<head>","<body>","<title>"], answer:"<body>", explanation:"<body> defines the content."},
+        {question:"Which tag is used for headings?", options:["<h>","<head>","<heading>","<h1> to <h6>"], answer:"<h1> to <h6>", explanation:"<h1> to <h6> are heading tags."}
+      ],
+      js: [
+        {question:"How to declare a variable in JS?", options:["var x;","dim x;","int x;","v x;"], answer:"var x;", explanation:"Use 'var' to declare variables."},
+        {question:"Which company developed JavaScript?", options:["Mozilla","Netscape","Sun Microsystems","Oracle"], answer:"Netscape", explanation:"Netscape developed JS."},
+        {question:"Which symbol is used for comments?", options:["//","<!-- -->","**","##"], answer:"//", explanation:"// is used for single line comment."},
+        {question:"Which method prints in console?", options:["console.log()","print()","log()","document.write()"], answer:"console.log()", explanation:"Used for debugging in JS."},
+        {question:"How to define a function?", options:["function myFunc()","func myFunc()","define myFunc()","function:myFunc()"], answer:"function myFunc()", explanation:"Correct syntax in JS."},
+        {question:"Which keyword defines constant?", options:["let","const","var","define"], answer:"const", explanation:"'const' is used for constants."},
+        {question:"How to write array in JS?", options:["[]","{}","()","<>"], answer:"[]", explanation:"Square brackets define arrays."},
+        {question:"Which operator checks both value and type?", options:["==","=","===","!=="], answer:"===", explanation:"'===' checks value & type."},
+        {question:"Which method adds item to end of array?", options:["push()","pop()","shift()","unshift()"], answer:"push()", explanation:"push() adds to end."},
+        {question:"JavaScript is a ____ language.", options:["compiled","interpreted","markup","style"], answer:"interpreted", explanation:"JS is interpreted."}
+      ],
+      css: [
+        {question:"Which property sets text color?", options:["color","font-color","text-color","background-color"], answer:"color", explanation:"color sets text color."},
+        {question:"Which selector targets id?", options:[".","#","*","!"], answer:"#", explanation:"# is for id."},
+        {question:"Which CSS unit is relative to parent?", options:["em","px","pt","cm"], answer:"em", explanation:"em is relative to parent."},
+        {question:"How to make text bold?", options:["font-weight:bold","text:bold","bold:true","weight:bold"], answer:"font-weight:bold", explanation:"font-weight is used."},
+        {question:"Which property sets background?", options:["background-color","bg","bgcolor","background-img"], answer:"background-color", explanation:"Sets background color."},
+        {question:"Which is correct syntax?", options:["h1 {color: red;}","h1 = red;","h1: color red;","h1 -> red"], answer:"h1 {color: red;}", explanation:"Correct CSS syntax."},
+        {question:"Which property changes font?", options:["font-family","font-style","text-font","font-change"], answer:"font-family", explanation:"Sets font style."},
+        {question:"How to center text?", options:["text-align:center","align:center","center:true","text:center"], answer:"text-align:center", explanation:"Centers text."},
+        {question:"How to comment in CSS?", options:["/* comment */","// comment","-- comment --","<!-- comment -->"], answer:"/* comment */", explanation:"CSS comment syntax."},
+        {question:"Which property makes rounded border?", options:["border-radius","border-curve","curve","round"], answer:"border-radius", explanation:"border-radius rounds corners."}
+      ]
+    };
+
+    let currentQuestion = 0;
+    let score = 0;
+    let selectedSubject = '';
+    let selectedQuestions = [];
+    let totalQuestions = 10;
+    let timer;
+    let timeLeft = 60;
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function register() {
+      alert("Registered Successfully (Simulation)");
+    }
+
+    function login() {
+      document.getElementById("auth").classList.add("hidden");
+      document.getElementById("subjectSelect").classList.remove("hidden");
+    }
+
+    function startQuiz() {
+      selectedSubject = document.getElementById("subject").value;
+      totalQuestions = parseInt(document.getElementById("quizLength").value);
+      score = 0;
+      currentQuestion = 0;
+      document.getElementById("subjectSelect").classList.add("hidden");
+      document.getElementById("quizBox").classList.remove("hidden");
+
+      const allQ = questions[selectedSubject];
+      selectedQuestions = shuffle([...allQ]).slice(0, totalQuestions);
+
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      clearInterval(timer);
+      timeLeft = 60;
+      document.getElementById("time").innerText = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("time").innerText = timeLeft;
+        if (timeLeft === 0) submitAnswer();
+      }, 1000);
+
+      const q = selectedQuestions[currentQuestion];
+      document.getElementById("question").innerText = q.question;
+      document.getElementById("progress").innerText = `Question ${currentQuestion + 1} of ${selectedQuestions.length}`;
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = '';
+      q.options.forEach(opt => {
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="radio" name="option" value="${opt}"> ${opt}`;
+        optionsDiv.appendChild(label);
+      });
+      document.getElementById("feedback").innerText = "";
+    }
+
+    function submitAnswer() {
+      clearInterval(timer);
+      const selected = document.querySelector('input[name="option"]:checked');
+      const correct = selectedQuestions[currentQuestion].answer;
+      const explain = selectedQuestions[currentQuestion].explanation;
+
+      if (selected && selected.value === correct) {
+        score++;
+        document.getElementById("feedback").innerText = "✅ Correct!";
+      } else {
+        document.getElementById("feedback").innerText = `❌ Wrong! Correct: ${correct}\n${explain}`;
+      }
+
+      setTimeout(() => {
+        currentQuestion++;
+        if (currentQuestion < selectedQuestions.length) {
+          loadQuestion();
+        } else {
+          showResult();
+        }
+      }, 2000);
+    }
+
+    function showResult() {
+      document.getElementById("quizBox").classList.add("hidden");
+      document.getElementById("resultBox").classList.remove("hidden");
+
+      const friendScore = Math.floor(Math.random() * (totalQuestions + 1));
+      let resultMsg = `You scored ${score}/${totalQuestions}\n`;
+      resultMsg += `Your Friend scored ${friendScore}/${totalQuestions}\n`;
+
+      if (score > friendScore) {
+        resultMsg += "🥇 You Win!";
+      } else if (score < friendScore) {
+        resultMsg += "🥈 Friend Wins!";
+      } else {
+        resultMsg += "🤝 It's a Draw!";
+      }
+
+      document.getElementById("result").innerText = resultMsg;
+    }
+
+    function goBack() {
+      document.getElementById("resultBox").classList.add("hidden");
+      document.getElementById("subjectSelect").classList.remove("hidden");
+    }
+
+    function replay() {
+      document.getElementById("resultBox").classList.add("hidden");
+      document.getElementById("quizBox").classList.remove("hidden");
+      score = 0;
+      currentQuestion = 0;
+      loadQuestion();
+    }
+  </script>
+</body>
+</html>
